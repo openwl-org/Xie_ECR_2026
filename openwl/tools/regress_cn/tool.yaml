@@ -1,0 +1,22 @@
+name: regress_cn
+description: >
+  Gene-wise regression of log(CPM) ~ deltaCT_Avg (mtDNA copy number).
+  Linear and quadratic models, both OLS and mixed model.
+parameters:
+  phenoFile:
+    type: string
+    format: file
+    description: Path to Experiment_Samples.rds
+  rnaFile:
+    type: string
+    format: file
+    description: Path to RNA_TMM.rds
+  mtdnaFile:
+    type: string
+    format: file
+    description: Path to mtDNA.rds (for deltaCT_Avg join)
+outputFiles:
+  - ETBR_CN_lm.rds
+  - ETBR_CN_lm2.rds
+  - ETBR_CN_lmer.rds
+  - ETBR_CN_lmer2.rds

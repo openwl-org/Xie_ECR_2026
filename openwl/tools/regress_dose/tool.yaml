@@ -1,0 +1,16 @@
+name: regress_dose
+description: >
+  Gene-wise linear regression of log(CPM) ~ Dose for EtBr dosage experiment.
+  OLS with lane averaging (mod.lm) and mixed model with per-lane data (mod.lmer).
+parameters:
+  phenoFile:
+    type: string
+    format: file
+    description: Path to Experiment_Samples.rds
+  rnaFile:
+    type: string
+    format: file
+    description: Path to RNA_TMM.rds
+outputFiles:
+  - ETBR_dose_lm.rds
+  - ETBR_dose_lmer.rds

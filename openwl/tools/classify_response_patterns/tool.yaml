@@ -1,0 +1,53 @@
+name: classify_response_patterns
+description: >
+  Combine all regression results and classify genes into response patterns
+  (Linear/Switch/Delayed/None) using likelihood templates with dnorm product
+  likelihoods. Requires data.Scale.Lag2() to compute scaled fold-change time
+  series at 4 dose-binned timepoints. Uses MitoCarta 3.0 for gene type annotation.
+parameters:
+  phenoFile:
+    type: string
+    format: file
+    description: Path to Experiment_Samples.rds
+  rnaFile:
+    type: string
+    format: file
+    description: Path to RNA_TMM.rds
+  mtdnaFile:
+    type: string
+    format: file
+    description: Path to mtDNA.rds
+  annotationFile:
+    type: string
+    format: file
+    description: Path to mart_export.txt
+  mitoCartaFile:
+    type: string
+    format: file
+    description: Path to Human.MitoCarta3.0.xlsx
+  doseLmFile:
+    type: string
+    format: file
+    description: Path to ETBR_dose_lm.rds
+  doseLmerFile:
+    type: string
+    format: file
+    description: Path to ETBR_dose_lmer.rds
+  cnLmFile:
+    type: string
+    format: file
+    description: Path to ETBR_CN_lm.rds
+  cnLmerFile:
+    type: string
+    format: file
+    description: Path to ETBR_CN_lmer.rds
+  mtLmFile:
+    type: string
+    format: file
+    description: Path to ETBR_MT_lm.rds
+  mtLmerFile:
+    type: string
+    format: file
+    description: Path to ETBR_MT_lmer.rds
+outputFiles:
+  - ETBR_paths.rds

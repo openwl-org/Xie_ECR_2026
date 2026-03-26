@@ -1,0 +1,208 @@
+#!/usr/bin/env Rscript
+# generate_html_report.R
+# Compile all results into self-contained HTML report
+
+suppressPackageStartupMessages({
+  library(readxl)
+  library(tidyverse)
+})
+
+shared_dir <- Sys.getenv("SHARED_DIR", "../../shared")
+source(file.path(shared_dir, "data_helpers.R"))
+
+paths_file      <- Sys.getenv("PATHS_FILE")
+go_results_file <- Sys.getenv("GO_RESULTS_FILE")
+goana_file      <- Sys.getenv("GOANA_FILE")
+figures_dir     <- Sys.getenv("FIGURES_DIR", "/output")
+mitocarta_file  <- Sys.getenv("MITO_CARTA_FILE")
+cn_anova_file   <- Sys.getenv("CN_ANOVA_FILE")
+mt_lmer_file    <- Sys.getenv("MT_LMER_FILE")
+output_dir      <- Sys.getenv("OUTPUT_DIR", "/output")
+
+cat("=== generate_html_report ===\n")
+
+# ============================================================
+# 1. Load data
+# ============================================================
+
+dat_etbr <- readRDS(paths_file)
+mc <- load_mitocarta(mitocarta_file)
+
+# Additional regression results
+ETBR_CN_anova <- if (file.exists(cn_anova_file)) readRDS(cn_anova_file) else NULL
+ETBR_MT_lmer  <- if (file.exists(mt_lmer_file)) readRDS(mt_lmer_file) else NULL
+
+# Enrichment results
+ego_results <- if (file.exists(go_results_file)) readRDS(go_results_file) else NULL
+go_etbr     <- if (file.exists(goana_file)) readRDS(goana_file) else NULL
+
+# ============================================================
+# 2. Compute statistics
+# ============================================================
+
+n_genes <- nrow(dat_etbr)
+n_sig_cn <- sum(p.adjust(dat_etbr$P, "holm") < 0.05, na.rm = TRUE)
+pattern_table <- table(dat_etbr$post_path)
+
+# Significance by model type
+sig_summary <- data.frame(
+  Model = c("CN linear (lmer)", "CN quadratic", "CN spline(2)", "CN spline(3)", "MT lmer"),
+  Significant = NA
+)
+
+if (!is.null(ETBR_CN_anova)) {
+  dat_ext <- dat_etbr %>% subset(gene_type != "Mt_tRNA") %>%
+    left_join(ETBR_CN_anova, by = "Gene")
+  if (!is.null(ETBR_MT_lmer)) {
+    dat_ext <- dat_ext %>% left_join(ETBR_MT_lmer, by = "Gene", suffix = c("", "_mt"))
+  }
+  sig_summary$Significant <- c(
+    n_sig_cn,
+    sum(p.adjust(dat_ext$P12, "holm") < 0.05, na.rm = TRUE),
+    sum(p.adjust(dat_ext$P13, "holm") < 0.05, na.rm = TRUE),
+    sum(p.adjust(dat_ext$P14, "holm") < 0.05, na.rm = TRUE),
+    if (!is.null(ETBR_MT_lmer)) sum(p.adjust(dat_ext$P_mt, "holm") < 0.05, na.rm = TRUE) else NA
+  )
+}
+
+# MitoCarta breakdown
+mito_genes <- mc$genes
+dogma_ids <- mito_genes$EnsemblGeneID_mapping_version_20200130[
+  grepl("Mitochondrial central dogma", mito_genes$MitoCarta3.0_MitoPathways)
+]
+oxphos_ids <- mito_genes$EnsemblGeneID_mapping_version_20200130[
+  grepl("OXPHOS", mito_genes$MitoCarta3.0_MitoPathways)
+]
+
+# ============================================================
+# 3. Embed figures as base64
+# ============================================================
+
+encode_png <- function(filepath) {
+  if (!file.exists(filepath)) return("")
+  raw <- readBin(filepath, "raw", file.size(filepath))
+  base64enc::base64encode(raw)
+}
+
+# Try to load base64enc, install if needed
+if (!requireNamespace("base64enc", quietly = TRUE)) {
+  # Fallback: just link to files
+  embed_img <- function(filepath, alt = "") {
+    if (!file.exists(filepath)) return("")
+    paste0('<p><em>Figure: ', alt, ' (', basename(filepath), ')</em></p>')
+  }
+} else {
+  embed_img <- function(filepath, alt = "") {
+    if (!file.exists(filepath)) return("")
+    b64 <- encode_png(filepath)
+    paste0('<img src="data:image/png;base64,', b64,
+           '" alt="', alt, '" style="max-width:100%;">')
+  }
+}
+
+# Find all PNG figures
+figure_files <- list.files(figures_dir, pattern = "\\.png$", full.names = TRUE)
+cat("Found", length(figure_files), "figures to embed\n")
+
+# ============================================================
+# 4. Build HTML
+# ============================================================
+
+html <- c(
+  '<!DOCTYPE html>',
+  '<html><head>',
+  '<meta charset="utf-8">',
+  '<title>mtDNA-CN Depletion Transcriptomics Report — Xie et al. (2026)</title>',
+  '<style>',
+  'body { font-family: "Helvetica Neue", Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; color: #333; }',
+  'h1 { color: #1a5276; border-bottom: 3px solid #1a5276; padding-bottom: 10px; }',
+  'h2 { color: #2874a6; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 40px; }',
+  'h3 { color: #3498db; }',
+  'table { border-collapse: collapse; width: 100%; margin: 15px 0; }',
+  'th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }',
+  'th { background-color: #2874a6; color: white; }',
+  'tr:nth-child(even) { background-color: #f2f2f2; }',
+  '.summary-box { background: #eaf2f8; border-left: 4px solid #2874a6; padding: 15px; margin: 20px 0; }',
+  '.stat { font-size: 2em; font-weight: bold; color: #1a5276; }',
+  'img { max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #ddd; }',
+  '</style>',
+  '</head><body>',
+  '',
+  '<h1>EtBr-Induced mtDNA-CN Depletion: Transcriptomics Report</h1>',
+  '<p>Xie et al. (2026) — Generated by OpenWL mtDNA Transcriptomics Specialist</p>',
+  '',
+  '<h2>1. Overview</h2>',
+  '<div class="summary-box">',
+  paste0('<p>Total genes analyzed: <span class="stat">', n_genes, '</span></p>'),
+  paste0('<p>Significant (CN lmer, Holm &lt; 0.05): <span class="stat">', n_sig_cn, '</span></p>'),
+  '</div>',
+  '',
+  '<h2>2. Response Pattern Classification</h2>',
+  '<p>Genes classified using likelihood-based templates (Linear/Switch/Delayed/None):</p>',
+  '<table><tr><th>Pattern</th><th>Count</th></tr>'
+)
+
+for (pat in names(pattern_table)) {
+  html <- c(html, paste0('<tr><td>', pat, '</td><td>', pattern_table[pat], '</td></tr>'))
+}
+html <- c(html, '</table>')
+
+# Significance by model type
+if (!all(is.na(sig_summary$Significant))) {
+  html <- c(html, '<h2>3. Significance by Model Type</h2>',
+            '<table><tr><th>Model</th><th>Significant Genes (Holm &lt; 0.05)</th></tr>')
+  for (i in 1:nrow(sig_summary)) {
+    html <- c(html, paste0('<tr><td>', sig_summary$Model[i], '</td><td>',
+                            sig_summary$Significant[i], '</td></tr>'))
+  }
+  html <- c(html, '</table>')
+}
+
+# Enrichment summary
+if (!is.null(ego_results)) {
+  html <- c(html, '<h2>4. GO Enrichment Summary</h2>',
+            '<table><tr><th>Category</th><th>Significant Terms</th></tr>')
+  for (name in names(ego_results)) {
+    ego <- ego_results[[name]]
+    n <- if (!is.null(ego)) nrow(ego@result %>% subset(p.adjust < 0.05)) else 0
+    html <- c(html, paste0('<tr><td>', name, '</td><td>', n, '</td></tr>'))
+  }
+  html <- c(html, '</table>')
+}
+
+# Figures
+html <- c(html, '<h2>5. Figures</h2>')
+figure_labels <- c(
+  fig1a_cn_dose = "Figure 1A: mtDNA-CN dose response",
+  fig1b_mt_gene_dose_grid = "Figure 1B: MT gene dose response grid",
+  fig2a_mt_position_logfc = "Figure 2A: MT gene position vs log2FC",
+  fig2b_distance_promoter = "Figure 2B: Distance from promoter",
+  figX_volcano = "Figure X: Volcano plot (MitoCarta labels)",
+  fig4_glycolysis_genes = "Figure 4: Glycolysis gene dose curves",
+  fig6a_cn_longitudinal = "Figure 6A: Longitudinal CN time course",
+  fig6b_mt_gene_longitudinal_grid = "Figure 6B: MT gene longitudinal grid",
+  fig7_scaled_lag = "Figure 7: Scaled lag comparison (PSAT1)"
+)
+
+for (f in figure_files) {
+  fname <- tools::file_path_sans_ext(basename(f))
+  label <- if (fname %in% names(figure_labels)) figure_labels[fname] else fname
+  html <- c(html, paste0('<h3>', label, '</h3>'), embed_img(f, label))
+}
+
+html <- c(html, '',
+          '<hr>',
+          '<p><em>Report generated by OpenWL mtDNA Transcriptomics Specialist v2.0.0</em></p>',
+          '</body></html>')
+
+# ============================================================
+# 5. Write
+# ============================================================
+
+dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+report_path <- file.path(output_dir, "mtdna_report.html")
+writeLines(html, report_path)
+
+cat("Report:", report_path, "\n")
+cat("Size:", round(file.size(report_path) / 1024), "KB\n")
+cat("=== DONE ===\n")

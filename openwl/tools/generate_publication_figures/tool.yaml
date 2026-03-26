@@ -1,0 +1,50 @@
+name: generate_publication_figures
+description: >
+  Generate all publication figures from Xie et al. (2026):
+  Fig 1 — CN dose-response, MT gene dose grids
+  Fig 2 — MT position vs logFC, distance from promoter
+  Fig X — Volcano with MitoCarta labels
+  Fig 3 — GO enrichment treeplots (via run_go_enrichment)
+  Fig 4 — Glycolysis gene dose curves
+  Fig 6 — Longitudinal CN time course, MT gene longitudinal grids
+  Fig 7 — Scaled lag comparison (PSAT1 example)
+  Outputs PNG files (SVG requires Cairo; fallback to PNG).
+parameters:
+  phenoFile:
+    type: string
+    format: file
+    description: Path to Experiment_Samples.rds
+  rnaFile:
+    type: string
+    format: file
+    description: Path to RNA_TMM.rds
+  mtdnaFile:
+    type: string
+    format: file
+    description: Path to mtDNA.rds
+  pathsFile:
+    type: string
+    format: file
+    description: Path to ETBR_paths.rds
+  annotationFile:
+    type: string
+    format: file
+    description: Path to mart_export.txt
+  mitoCartaFile:
+    type: string
+    format: file
+    description: Path to Human.MitoCarta3.0.xlsx
+  goResultsFile:
+    type: string
+    format: file
+    description: Path to GO_enrichGO_results.rds (optional)
+outputFiles:
+  - fig1a_cn_dose.png
+  - fig1b_mt_gene_dose_grid.png
+  - fig2a_mt_position_logfc.png
+  - fig2b_distance_promoter.png
+  - figX_volcano.png
+  - fig4_glycolysis_genes.png
+  - fig6a_cn_longitudinal.png
+  - fig6b_mt_gene_longitudinal_grid.png
+  - fig7_scaled_lag.png

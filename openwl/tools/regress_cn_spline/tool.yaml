@@ -1,0 +1,20 @@
+name: regress_cn_spline
+description: >
+  Gene-wise natural spline regression of log(CPM) ~ ns(deltaCT_Avg, df).
+  Fits df=2 and df=3 spline mixed models.
+parameters:
+  phenoFile:
+    type: string
+    format: file
+    description: Path to Experiment_Samples.rds
+  rnaFile:
+    type: string
+    format: file
+    description: Path to RNA_TMM.rds
+  mtdnaFile:
+    type: string
+    format: file
+    description: Path to mtDNA.rds
+outputFiles:
+  - ETBR_CN_ns2.rds
+  - ETBR_CN_ns3.rds

@@ -1,0 +1,17 @@
+name: regress_longitudinal
+description: >
+  Per-timepoint regression of log(CPM) ~ Experiment (Control vs EtBr).
+  Uses longitudinal samples only (Treatment + Recovery curves).
+  Fits both OLS (lane-averaged) and mixed model per timepoint.
+parameters:
+  phenoFile:
+    type: string
+    format: file
+    description: Path to Experiment_Samples.rds
+  rnaFile:
+    type: string
+    format: file
+    description: Path to RNA_TMM.rds
+outputFiles:
+  - ETBR_LON_lm.rds
+  - ETBR_LON_lmer.rds

@@ -1,0 +1,36 @@
+name: generate_html_report
+description: >
+  Compile all results into a single self-contained HTML report with
+  embedded figures (base64), summary tables, regression counts,
+  pattern classification breakdown, and enrichment highlights.
+parameters:
+  pathsFile:
+    type: string
+    format: file
+    description: Path to ETBR_paths.rds
+  goResultsFile:
+    type: string
+    format: file
+    description: Path to GO_enrichGO_results.rds
+  goanaFile:
+    type: string
+    format: file
+    description: Path to GO_goana_table.rds
+  figuresDir:
+    type: string
+    format: file
+    description: Path to directory containing generated PNG figures
+  mitoCartaFile:
+    type: string
+    format: file
+    description: Path to Human.MitoCarta3.0.xlsx
+  cnAnovaFile:
+    type: string
+    format: file
+    description: Path to ETBR_CN_anova.rds
+  mtLmerFile:
+    type: string
+    format: file
+    description: Path to ETBR_MT_lmer.rds
+outputFiles:
+  - mtdna_report.html

@@ -1,0 +1,20 @@
+name: regress_cn_quadratic
+description: >
+  AIC-based model comparison for GE ~ deltaCT_Avg:
+  linear vs quadratic vs ns(df=2) vs ns(df=3).
+  Outputs AIC values and likelihood ratio test p-values.
+parameters:
+  phenoFile:
+    type: string
+    format: file
+    description: Path to Experiment_Samples.rds
+  rnaFile:
+    type: string
+    format: file
+    description: Path to RNA_TMM.rds
+  mtdnaFile:
+    type: string
+    format: file
+    description: Path to mtDNA.rds
+outputFiles:
+  - ETBR_CN_anova.rds

@@ -1,0 +1,16 @@
+name: regress_mt
+description: >
+  Gene-wise regression of log(CPM) ~ Med_log2FC_MT (median MT gene fold change proxy).
+  Both OLS with lane averaging and mixed model.
+parameters:
+  phenoFile:
+    type: string
+    format: file
+    description: Path to Experiment_Samples.rds (must include Med_log2FC_MT column)
+  rnaFile:
+    type: string
+    format: file
+    description: Path to RNA_TMM.rds
+outputFiles:
+  - ETBR_MT_lm.rds
+  - ETBR_MT_lmer.rds

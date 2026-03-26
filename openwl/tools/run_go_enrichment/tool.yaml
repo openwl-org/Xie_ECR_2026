@@ -1,0 +1,23 @@
+name: run_go_enrichment
+description: >
+  Stratified GO enrichment analysis. Runs enrichGO for: all-significant (up/down),
+  by response pattern (Linear/Switch/Delayed/None) x direction (up/down), plus
+  a 15-way goana() comparison table. Also computes rrvgo treemap simplification.
+parameters:
+  pathsFile:
+    type: string
+    format: file
+    description: Path to ETBR_paths.rds
+  cnAnovaFile:
+    type: string
+    format: file
+    description: Path to ETBR_CN_anova.rds (for Sig_sq, Sig_sp2, Sig_sp3)
+  mtLmerFile:
+    type: string
+    format: file
+    description: Path to ETBR_MT_lmer.rds (for Sig_mt)
+outputFiles:
+  - GO_enrichGO_results.rds
+  - GO_goana_table.rds
+  - GO_goana_table.tsv
+  - GO_treemap_results.rds

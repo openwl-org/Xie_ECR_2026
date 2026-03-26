@@ -1,0 +1,28 @@
+name: prepare_expression_data
+description: >
+  Read raw RNA-seq counts, bridge files, and mtDNA qPCR data.
+  Parse sample metadata from SampleName (Chemical, Dose, Curve, Time, Rep).
+  TMM-normalize with edgeR. PCA outlier removal at 4 SD on first 10 PCs.
+  Compute Med_log2FC_MT (median log2 fold change of MT protein-coding genes
+  vs condition-matched controls). Export Experiment_Samples.rds, RNA_TMM.rds, mtDNA.rds.
+parameters:
+  countFile:
+    type: string
+    format: file
+    description: Path to merged.csv (raw gene counts, genes x samples)
+  bridgeFile:
+    type: string
+    format: file
+    description: Path to AllSamples.Randomized.RNAseq.csv (sample bridge file)
+  deltaCTFile:
+    type: string
+    format: file
+    description: Path to ChemicalProjectMatchUpDeltaCT.xlsx (mtDNA qPCR data)
+  annotationFile:
+    type: string
+    format: file
+    description: Path to mart_export.txt (gene annotations from BioMart)
+outputFiles:
+  - Experiment_Samples.rds
+  - RNA_TMM.rds
+  - mtDNA.rds

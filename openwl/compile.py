@@ -61,8 +61,14 @@ def get_git_info(repo_dir: str) -> dict:
 
 
 def camel_to_upper_snake(name: str) -> str:
-    """Convert camelCase to UPPER_SNAKE_CASE for env var names."""
-    s = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name)
+    """Convert camelCase to UPPER_SNAKE_CASE for env var names.
+    Must match ptbl-task-mcp's conversion exactly:
+      deltaCTFile → DELTA_CT_FILE (not DELTA_CTFILE)
+    """
+    # Step 1: Split consecutive uppercase before a lowercase: CTFile → CT_File
+    s = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1_\2', name)
+    # Step 2: Split lowercase/digit before uppercase: delta_CT → delta_CT (already done), deltaC → delta_C
+    s = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', s)
     return s.upper()
 
 
@@ -232,7 +238,102 @@ def compile_agent(openwl_dir: str, git_info: dict) -> dict:
             },
         }
 
-    # 5. Build intelligence section
+    # 5. Inject platform tools (required by Temporal delegation workflow)
+    # These are NOT R analysis tools — they're system/MCP tools that every
+    # specialist needs for the ReWOO planning pattern and file discovery.
+    tools["search_vault"] = {
+        "name": "search_vault",
+        "type": "mcp",
+        "description": "Search vault storage for files by pattern, extension, or size. Searches notebook files, task outputs, platform files, and external public buckets.",
+        "implementation": {
+            "server": "ptbl-files",
+            "method": "search_vault"
+        },
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "notebookId": {
+                    "type": "string",
+                    "description": "Notebook ID to search in"
+                },
+                "pattern": {
+                    "type": "string",
+                    "description": "Regex pattern to match filenames (e.g. '.*\\.csv' for CSV files)"
+                },
+                "extension": {
+                    "type": "string",
+                    "description": "File extension filter (e.g. '.csv', '.xlsx')"
+                }
+            },
+            "required": ["notebookId"]
+        }
+    }
+
+    tools["postMessage"] = {
+        "name": "postMessage",
+        "type": "mcp",
+        "description": "Post message to user",
+        "implementation": {
+            "server": "ptbl-messages",
+            "method": "add_agent_message"
+        },
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "messageType": {
+                    "type": "string",
+                    "enum": ["update", "result", "question", "reasoning"]
+                }
+            },
+            "required": ["message", "messageType"]
+        }
+    }
+
+    tools["submit_execution_plan"] = {
+        "type": "system",
+        "description": "Submit a batch execution plan using parallel arrays. Each task is defined by its index across the arrays.",
+        "parameters": {
+            "type": "object",
+            "required": ["taskToolNames", "description"],
+            "properties": {
+                "taskToolNames": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Tool name for each task"
+                },
+                "taskInputFiles": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Comma-separated /pfs/ file paths per task. Empty string if no files needed."
+                },
+                "taskDependsOn": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Comma-separated 0-based indices of dependency tasks. Empty string = no dependencies."
+                },
+                "taskToolParameters": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "JSON string of non-file parameters per task. Empty string if no extra params."
+                },
+                "taskScatter": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Scatter mode per task. Empty string = single task (default)."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Human-readable plan description"
+                }
+            }
+        }
+    }
+
+    # 6. Build intelligence section
+    #    (was step 5 before platform tool injection)
     intel_yaml = agent_yaml.get("intelligence", {})
     instruction_sections = {}
     for section_name, section_data in intel_yaml.get("instructionSections", {}).items():

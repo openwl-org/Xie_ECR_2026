@@ -9,7 +9,7 @@ description: >
   enrichment, and publication-quality figures.
 
 docker:
-  image: gcr.io/promptable-mvp/mtdna-transcriptomics-toolbox:v2.0.0
+  image: gcr.io/promptable-mvp/mtdna-transcriptomics-toolbox:v1.0.0
   resources:
     cpuMilli: 2000
     memoryMib: 8192

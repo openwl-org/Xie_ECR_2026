@@ -1,5 +1,5 @@
 name: mtdna-transcriptomics-specialist
-version: 2.0.0
+displayName: mtDNA Transcriptomics Specialist
 description: >
   Specialist agent for the Xie et al. (2026) EtBr-induced mtDNA copy number
   depletion study. Performs TMM-normalized RNA-seq analysis including dose-response

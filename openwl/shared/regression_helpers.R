@@ -10,6 +10,32 @@ suppressPackageStartupMessages({
   library(tidyverse)
 })
 
+# --- Gene chunking for horizontal scaling ---
+
+#' Get this chunk's slice of genes (for parallel scatter across pods)
+#' Uses CHUNK_INDEX (0-based) and TOTAL_CHUNKS env vars
+get_gene_chunk <- function(all_genes) {
+  chunk_index  <- as.integer(Sys.getenv("CHUNK_INDEX", "0"))
+  total_chunks <- as.integer(Sys.getenv("TOTAL_CHUNKS", "1"))
+  if (total_chunks <= 1) return(all_genes)
+  n <- length(all_genes)
+  chunk_size <- ceiling(n / total_chunks)
+  start_idx  <- chunk_index * chunk_size + 1
+  end_idx    <- min((chunk_index + 1) * chunk_size, n)
+  genes <- all_genes[start_idx:end_idx]
+  cat(sprintf("Chunk %d/%d: genes %d-%d (%d of %d total)\n",
+      chunk_index + 1, total_chunks, start_idx, end_idx, length(genes), n))
+  return(genes)
+}
+
+#' Get output filename suffix for chunked runs (empty string if not chunked)
+chunk_suffix <- function() {
+  total_chunks <- as.integer(Sys.getenv("TOTAL_CHUNKS", "1"))
+  chunk_index  <- as.integer(Sys.getenv("CHUNK_INDEX", "0"))
+  if (total_chunks <= 1) return("")
+  return(sprintf("_chunk%02d", chunk_index))
+}
+
 # --- Data preparation ---
 
 #' Prepare gene data with lane averaging

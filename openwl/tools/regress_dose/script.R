@@ -18,7 +18,8 @@ dat_rna   <- readRDS(rna_file)
 
 # Subset to ETBR dosage samples
 pheno_sub <- dat_pheno %>% subset(Chemical == "ETBR" & Curve == "Dosage")
-genes <- rownames(dat_rna)
+genes <- get_gene_chunk(rownames(dat_rna))
+sfx <- chunk_suffix()
 
 cat("Genes:", length(genes), "| Samples:", nrow(pheno_sub), "\n")
 
@@ -31,8 +32,8 @@ cat("Running TWAS.lmer (Dose)...\n")
 ETBR_dose_lmer <- TWAS.lmer(genes, dat_rna, "Dose", pheno_sub)
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-saveRDS(ETBR_dose_lm, file.path(output_dir, "ETBR_dose_lm.rds"))
-saveRDS(ETBR_dose_lmer, file.path(output_dir, "ETBR_dose_lmer.rds"))
+saveRDS(ETBR_dose_lm, file.path(output_dir, paste0("ETBR_dose_lm", sfx, ".rds")))
+saveRDS(ETBR_dose_lmer, file.path(output_dir, paste0("ETBR_dose_lmer", sfx, ".rds")))
 
 n_sig_lm   <- sum(p.adjust(ETBR_dose_lm$P, "holm") < 0.05, na.rm = TRUE)
 n_sig_lmer <- sum(p.adjust(ETBR_dose_lmer$P, "holm") < 0.05, na.rm = TRUE)

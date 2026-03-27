@@ -1,0 +1,12 @@
+name: merge_chunks
+description: >
+  Merge chunked regression outputs. Finds all *_chunk*.rds files in input
+  directories, groups by base name (e.g. ETBR_CN_lmer), rbinds them into
+  single merged RDS files. Produces the same output filenames as non-chunked
+  runs (e.g. ETBR_CN_lmer.rds).
+parameters:
+  inputDirs:
+    type: string
+    description: Comma-separated list of input directories containing chunked RDS files
+outputFiles:
+  - "*.rds"

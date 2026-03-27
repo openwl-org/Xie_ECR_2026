@@ -11,6 +11,12 @@ parameters:
     type: string
     format: file
     description: Path to RNA_TMM.rds
+  chunkIndex:
+    type: integer
+    description: 0-based chunk index for gene-level scatter (default 0)
+  totalChunks:
+    type: integer
+    description: Total number of gene chunks (default 1, no chunking)
 outputFiles:
   - ETBR_MT_lm.rds
   - ETBR_MT_lmer.rds

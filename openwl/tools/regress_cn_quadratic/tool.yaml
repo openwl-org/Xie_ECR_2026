@@ -16,5 +16,11 @@ parameters:
     type: string
     format: file
     description: Path to mtDNA.rds
+  chunkIndex:
+    type: integer
+    description: 0-based chunk index for gene-level scatter (default 0)
+  totalChunks:
+    type: integer
+    description: Total number of gene chunks (default 1, no chunking)
 outputFiles:
   - ETBR_CN_anova.rds

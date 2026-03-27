@@ -60,12 +60,13 @@ intelligence:
       content: |
         Pipeline order:
         1. prepare_expression_data (produces Experiment_Samples.rds, RNA_TMM.rds, mtDNA.rds)
-        2. regress_dose, regress_cn, regress_cn_spline, regress_cn_anova, regress_mt (parallel)
+        2. regress_dose, regress_cn, regress_cn_spline, regress_cn_quadratic, regress_mt (parallel, scatter: "chunks:4")
         3. regress_longitudinal (depends on step 1 only)
-        4. classify_response_patterns (depends on steps 2-3)
-        5. run_go_enrichment (depends on step 4)
-        6. generate_publication_figures (depends on steps 4-5)
-        7. generate_html_report (depends on all above)
+        4. merge_chunks (depends on steps 2-3, rbinds chunked RDS outputs)
+        5. classify_response_patterns (depends on step 4)
+        6. run_go_enrichment (depends on step 5)
+        7. generate_publication_figures (depends on steps 5-6)
+        8. generate_html_report (depends on all above)
 
     batch-execution:
       order: 4
@@ -75,6 +76,14 @@ intelligence:
         Input files from upstream tasks are available in dependency output directories.
         The shared/ directory contains regression_helpers.R and data_helpers.R which
         are sourced by tool scripts automatically via the SHARED_DIR environment variable.
+
+        Gene-level scatter: regression tools (regress_dose, regress_cn,
+        regress_cn_spline, regress_cn_quadratic, regress_mt) support
+        scatter: "chunks:4" to split ~11,800 genes across 4 parallel pods.
+        Each chunk outputs suffixed files (e.g. ETBR_CN_lmer_chunk00.rds).
+        After all chunks complete, run merge_chunks to rbind them into
+        the standard output files (e.g. ETBR_CN_lmer.rds).
+        merge_chunks depends on all scattered regression tasks.
 
 tools:
   prepare_expression_data:
@@ -121,6 +130,14 @@ tools:
     description: >
       Gene-wise regression of log(CPM) ~ Med_log2FC_MT (median MT gene fold change).
       Both OLS and mixed. Outputs ETBR_MT_lm.rds, ETBR_MT_lmer.rds.
+
+  merge_chunks:
+    type: docker
+    script: tools/merge_chunks/script.R
+    description: >
+      Merge chunked regression outputs. Finds *_chunk*.rds files across input
+      directories, groups by base name, rbinds into single merged RDS files.
+      Run after scattered regression tasks complete.
 
   regress_longitudinal:
     type: docker

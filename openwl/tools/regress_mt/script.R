@@ -20,7 +20,8 @@ dat_rna   <- readRDS(rna_file)
 stopifnot("Med_log2FC_MT" %in% names(dat_pheno))
 
 pheno_sub <- dat_pheno %>% subset(Chemical == "ETBR" & Curve == "Dosage")
-genes <- rownames(dat_rna)
+genes <- get_gene_chunk(rownames(dat_rna))
+sfx <- chunk_suffix()
 
 cat("Genes:", length(genes), "| Samples:", nrow(pheno_sub), "\n")
 cat("Med_log2FC_MT range:",
@@ -35,8 +36,8 @@ cat("Running TWAS.lmer (Med_log2FC_MT)...\n")
 ETBR_MT_lmer <- TWAS.lmer(genes, dat_rna, "Med_log2FC_MT", pheno_sub)
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-saveRDS(ETBR_MT_lm, file.path(output_dir, "ETBR_MT_lm.rds"))
-saveRDS(ETBR_MT_lmer, file.path(output_dir, "ETBR_MT_lmer.rds"))
+saveRDS(ETBR_MT_lm, file.path(output_dir, paste0("ETBR_MT_lm", sfx, ".rds")))
+saveRDS(ETBR_MT_lmer, file.path(output_dir, paste0("ETBR_MT_lmer", sfx, ".rds")))
 
 n_sig <- sum(p.adjust(ETBR_MT_lmer$P, "holm") < 0.05, na.rm = TRUE)
 cat("Significant genes (MT lmer, Holm 0.05):", n_sig, "\n")

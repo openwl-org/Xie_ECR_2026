@@ -27,7 +27,8 @@ dat_pheno$deltaCT_Avg <- sapply(dat_pheno$SampleName, function(x) {
 })
 
 pheno_sub <- dat_pheno %>% subset(Chemical == "ETBR" & Curve == "Dosage")
-genes <- rownames(dat_rna)
+genes <- get_gene_chunk(rownames(dat_rna))
+sfx <- chunk_suffix()
 
 cat("Genes:", length(genes), "| Samples:", nrow(pheno_sub), "\n")
 
@@ -40,7 +41,7 @@ cat("Running TWAS.lmer3 (deltaCT_Avg, df=3)...\n")
 ETBR_CN_ns3 <- TWAS.lmer3(genes, dat_rna, "deltaCT_Avg", pheno_sub, 3)
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-saveRDS(ETBR_CN_ns2, file.path(output_dir, "ETBR_CN_ns2.rds"))
-saveRDS(ETBR_CN_ns3, file.path(output_dir, "ETBR_CN_ns3.rds"))
+saveRDS(ETBR_CN_ns2, file.path(output_dir, paste0("ETBR_CN_ns2", sfx, ".rds")))
+saveRDS(ETBR_CN_ns3, file.path(output_dir, paste0("ETBR_CN_ns3", sfx, ".rds")))
 
 cat("=== DONE ===\n")

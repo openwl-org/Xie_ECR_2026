@@ -27,7 +27,8 @@ dat_pheno$deltaCT_Avg <- sapply(dat_pheno$SampleName, function(x) {
 })
 
 pheno_sub <- dat_pheno %>% subset(Chemical == "ETBR" & Curve == "Dosage")
-genes <- rownames(dat_rna)
+genes <- get_gene_chunk(rownames(dat_rna))
+sfx <- chunk_suffix()
 
 cat("Genes:", length(genes), "| Samples:", nrow(pheno_sub), "\n")
 
@@ -36,7 +37,7 @@ cat("Running TWAS.anova (deltaCT_Avg)...\n")
 ETBR_CN_anova <- TWAS.anova(genes, dat_rna, "deltaCT_Avg", pheno_sub)
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-saveRDS(ETBR_CN_anova, file.path(output_dir, "ETBR_CN_anova.rds"))
+saveRDS(ETBR_CN_anova, file.path(output_dir, paste0("ETBR_CN_anova", sfx, ".rds")))
 
 n_sig_quad <- sum(p.adjust(ETBR_CN_anova$P12, "holm") < 0.05, na.rm = TRUE)
 n_sig_sp2  <- sum(p.adjust(ETBR_CN_anova$P13, "holm") < 0.05, na.rm = TRUE)

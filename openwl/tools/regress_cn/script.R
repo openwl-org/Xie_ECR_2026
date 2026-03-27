@@ -27,7 +27,8 @@ dat_pheno$deltaCT_Avg <- sapply(dat_pheno$SampleName, function(x) {
 })
 
 pheno_sub <- dat_pheno %>% subset(Chemical == "ETBR" & Curve == "Dosage")
-genes <- rownames(dat_rna)
+genes <- get_gene_chunk(rownames(dat_rna))
+sfx <- chunk_suffix()
 
 cat("Genes:", length(genes), "| Samples:", nrow(pheno_sub), "\n")
 
@@ -48,10 +49,10 @@ cat("Running TWAS.lmer2 (deltaCT_Avg)...\n")
 ETBR_CN_lmer2 <- TWAS.lmer2(genes, dat_rna, "deltaCT_Avg", pheno_sub)
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-saveRDS(ETBR_CN_lm, file.path(output_dir, "ETBR_CN_lm.rds"))
-saveRDS(ETBR_CN_lm2, file.path(output_dir, "ETBR_CN_lm2.rds"))
-saveRDS(ETBR_CN_lmer, file.path(output_dir, "ETBR_CN_lmer.rds"))
-saveRDS(ETBR_CN_lmer2, file.path(output_dir, "ETBR_CN_lmer2.rds"))
+saveRDS(ETBR_CN_lm, file.path(output_dir, paste0("ETBR_CN_lm", sfx, ".rds")))
+saveRDS(ETBR_CN_lm2, file.path(output_dir, paste0("ETBR_CN_lm2", sfx, ".rds")))
+saveRDS(ETBR_CN_lmer, file.path(output_dir, paste0("ETBR_CN_lmer", sfx, ".rds")))
+saveRDS(ETBR_CN_lmer2, file.path(output_dir, paste0("ETBR_CN_lmer2", sfx, ".rds")))
 
 n_sig <- sum(p.adjust(ETBR_CN_lmer$P, "holm") < 0.05, na.rm = TRUE)
 cat("Significant genes (CN lmer, Holm 0.05):", n_sig, "\n")

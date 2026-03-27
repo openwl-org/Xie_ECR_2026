@@ -60,13 +60,12 @@ intelligence:
       content: |
         Pipeline order:
         1. prepare_expression_data (produces Experiment_Samples.rds, RNA_TMM.rds, mtDNA.rds)
-        2. regress_dose, regress_cn, regress_cn_spline, regress_cn_quadratic, regress_mt (parallel, scatter: "chunks:4")
-        3. regress_longitudinal (depends on step 1 only)
-        4. merge_chunks (depends on steps 2-3, rbinds chunked RDS outputs)
-        5. classify_response_patterns (depends on step 4)
-        6. run_go_enrichment (depends on step 5)
-        7. generate_publication_figures (depends on steps 5-6)
-        8. generate_html_report (depends on all above)
+        2. regress_dose, regress_cn, regress_cn_spline, regress_cn_quadratic, regress_mt, regress_longitudinal (parallel, scatter: "chunks:4")
+        3. classify_response_patterns (depends on step 2)
+        4. run_go_enrichment (depends on step 3)
+        5. generate_publication_figures (depends on steps 3-4)
+        6. generate_html_report (depends on all above)
+        NOTE: Do NOT plan merge_chunks — it is auto-injected after each scattered regression.
 
     batch-execution:
       order: 4
@@ -77,13 +76,12 @@ intelligence:
         The shared/ directory contains regression_helpers.R and data_helpers.R which
         are sourced by tool scripts automatically via the SHARED_DIR environment variable.
 
-        Gene-level scatter: regression tools (regress_dose, regress_cn,
-        regress_cn_spline, regress_cn_quadratic, regress_mt) support
-        scatter: "chunks:4" to split ~11,800 genes across 4 parallel pods.
+        Gene-level scatter: ALL regression tools (regress_dose, regress_cn,
+        regress_cn_spline, regress_cn_quadratic, regress_mt, regress_longitudinal)
+        support scatter: "chunks:4" to split ~11,800 genes across 4 parallel pods.
         Each chunk outputs suffixed files (e.g. ETBR_CN_lmer_chunk00.rds).
-        After all chunks complete, run merge_chunks to rbind them into
-        the standard output files (e.g. ETBR_CN_lmer.rds).
-        merge_chunks depends on all scattered regression tasks.
+        A merge_chunks gather step is auto-injected after each scattered tool —
+        do NOT include merge_chunks in your execution plan.
 
 tools:
   prepare_expression_data:

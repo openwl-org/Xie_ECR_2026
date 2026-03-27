@@ -22,35 +22,31 @@ Add the coding-agent to the team.
 Run the complete Xie et al. (2026) analysis pipeline — all 12 tools from data preparation through HTML report generation.
 
 :::{note}
-**Pipeline overview (12 tools, 21 parallel pods, ~15 min total):**
+**Pipeline overview (11 tools, 28 parallel pods, ~12 min total):**
 
 **Phase 1 — Data Preparation**
 - `prepare_expression_data` — Read raw counts (genes x 112 samples), parse SampleName to extract Chemical/Dose/Curve/Time/Rep, filter to EtBr-only (126 samples across Dosage/Treatment/Recovery arms), TMM-normalize with edgeR (median > 49 in controls, ENSG prefix), PCA outlier removal at 4 SD on first 10 PCs, compute Med_log2FC_MT (median log2 fold-change of 13 MT protein-coding genes vs condition-matched controls)
 
-**Phase 2 — Gene-wise Regressions (5 tools x 4 gene chunks = 20 parallel pods)**
+**Phase 2 — Gene-wise Regressions (6 tools x 4 gene chunks = 24 parallel pods + auto-gather)**
 - `regress_dose` — log(CPM) ~ Dose (scaled 0-6); OLS + mixed model
 - `regress_cn` — log(CPM) ~ deltaCT_Avg; linear + quadratic, OLS + mixed (4 result sets)
 - `regress_cn_spline` — log(CPM) ~ ns(deltaCT_Avg, df=2) and df=3
 - `regress_cn_quadratic` — AIC model comparison + likelihood ratio tests (P12, P13, P14)
 - `regress_mt` — log(CPM) ~ Med_log2FC_MT; OLS + mixed model
-- Each regression runs with `scatter: "chunks:4"` — genes split across 4 parallel pods
-
-**Phase 3 — Longitudinal Analysis**
 - `regress_longitudinal` — log(CPM) ~ Experiment at each of 7 timepoints (0-192h)
+- Each regression runs with `scatter: "chunks:4"` — genes split across 4 parallel pods
+- `merge_chunks` auto-injected after each scattered tool (no need to plan it)
 
-**Phase 4 — Merge Chunks**
-- `merge_chunks` — Finds `*_chunk*.rds` files from scattered regressions, rbinds into single merged RDS files
-
-**Phase 5 — Pattern Classification**
+**Phase 3 — Pattern Classification**
 - `classify_response_patterns` — Classify genes into Linear/Switch/Delayed/None via dnorm likelihoods
 
-**Phase 6 — GO Enrichment**
+**Phase 4 — GO Enrichment**
 - `run_go_enrichment` — 15 enrichGO analyses + 15-way goana + rrvgo treemaps
 
-**Phase 7 — Figures**
+**Phase 5 — Figures**
 - `generate_publication_figures` — 9 publication-quality PNG figures
 
-**Phase 8 — Report**
+**Phase 6 — Report**
 - `generate_html_report` — Self-contained HTML with embedded figures and tables
 
 **Input files** (all in vault):
@@ -69,7 +65,7 @@ Run the full Xie et al. mtDNA depletion pipeline using:
 - mitoCartaFile: /pfs/promptable-public-test-data/arking-mtdna/Human.MitoCarta3.0.xlsx
 - annotationFile: /pfs/promptable-public-test-data/arking-mtdna/mart_export.txt
 
-Run all steps: prepare_expression_data, all regressions with scatter: "chunks:4" (dose, CN, CN spline, CN quadratic, MT), regress_longitudinal, merge_chunks, classify_response_patterns, run_go_enrichment, generate_publication_figures, and generate_html_report.
+Run all steps: prepare_expression_data, all regressions with scatter: "chunks:4" (dose, CN, CN spline, CN quadratic, MT, longitudinal), classify_response_patterns, run_go_enrichment, generate_publication_figures, and generate_html_report. (merge_chunks is auto-injected after each scattered regression — do NOT include it in the plan.)
 :::
 
 ---

@@ -25,7 +25,8 @@ dat_Lon$Experiment <- factor(
   levels = c("Control", "EtBr")
 )
 
-genes <- rownames(dat_rna)
+genes <- get_gene_chunk(rownames(dat_rna))
+sfx <- chunk_suffix()
 timepoints <- unique(dat_Lon$Time)
 cat("Genes:", length(genes), "| Timepoints:", paste(timepoints, collapse = ", "), "\n")
 
@@ -53,8 +54,8 @@ for (tp in timepoints) {
 }
 
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-saveRDS(ETBR_LON_lm, file.path(output_dir, "ETBR_LON_lm.rds"))
-saveRDS(ETBR_LON_lmer, file.path(output_dir, "ETBR_LON_lmer.rds"))
+saveRDS(ETBR_LON_lm, file.path(output_dir, paste0("ETBR_LON_lm", sfx, ".rds")))
+saveRDS(ETBR_LON_lmer, file.path(output_dir, paste0("ETBR_LON_lmer", sfx, ".rds")))
 
 cat("\n=== Summary ===\n")
 for (tp in timepoints) {

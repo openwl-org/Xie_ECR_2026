@@ -352,6 +352,9 @@ def compile_agent(openwl_dir: str, git_info: dict) -> dict:
     # Display name from agent.yaml or derive from id
     display_name = agent_yaml.get("displayName", "mtDNA Transcriptomics Specialist")
 
+    # Read iconUrl from agent.yaml if present
+    icon_url = agent_yaml.get("iconUrl")
+
     spec = {
         "id": agent_id,
         "name": display_name,
@@ -437,6 +440,10 @@ def compile_agent(openwl_dir: str, git_info: dict) -> dict:
         "tools": tools,
         "intelligence": intelligence,
     }
+
+    # Add iconUrl if defined in agent.yaml
+    if icon_url:
+        spec["iconUrl"] = icon_url
 
     return spec
 

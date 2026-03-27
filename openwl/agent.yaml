@@ -1,5 +1,6 @@
 name: mtdna-transcriptomics-specialist
 displayName: mtDNA Transcriptomics Specialist
+iconUrl: https://firebasestorage.googleapis.com/v0/b/promptable-mvp.firebasestorage.app/o/agent-icons%2Fmtdna-transcriptomics-specialist-icon.png?alt=media
 description: >
   Specialist agent for the Xie et al. (2026) EtBr-induced mtDNA copy number
   depletion study. Performs TMM-normalized RNA-seq analysis including dose-response
@@ -60,12 +61,12 @@ intelligence:
       content: |
         Pipeline order:
         1. prepare_expression_data (produces Experiment_Samples.rds, RNA_TMM.rds, mtDNA.rds)
-        2. regress_dose, regress_cn, regress_cn_spline, regress_cn_quadratic, regress_mt, regress_longitudinal (parallel, scatter: "chunks:4")
-        3. classify_response_patterns (depends on step 2)
-        4. run_go_enrichment (depends on step 3)
-        5. generate_publication_figures (depends on steps 3-4)
-        6. generate_html_report (depends on all above)
-        NOTE: Do NOT plan merge_chunks — it is auto-injected after each scattered regression.
+        2. regress_dose, regress_cn, regress_cn_spline, regress_cn_quadratic, regress_mt, regress_longitudinal (parallel, each with scatter: "chunks:4")
+        3. merge_chunks (depends on ALL regression tasks from step 2; DO NOT scatter this tool)
+        4. classify_response_patterns (depends on merge_chunks, step 3)
+        5. run_go_enrichment (depends on step 4)
+        6. generate_publication_figures (depends on steps 4-5)
+        7. generate_html_report (depends on all above)
 
     batch-execution:
       order: 4
@@ -76,12 +77,28 @@ intelligence:
         The shared/ directory contains regression_helpers.R and data_helpers.R which
         are sourced by tool scripts automatically via the SHARED_DIR environment variable.
 
-        Gene-level scatter: ALL regression tools (regress_dose, regress_cn,
-        regress_cn_spline, regress_cn_quadratic, regress_mt, regress_longitudinal)
-        support scatter: "chunks:4" to split ~11,800 genes across 4 parallel pods.
-        Each chunk outputs suffixed files (e.g. ETBR_CN_lmer_chunk00.rds).
-        A merge_chunks gather step is auto-injected after each scattered tool —
-        do NOT include merge_chunks in your execution plan.
+        SCATTER + GATHER RULE (CRITICAL):
+        All regression tools support scatter: "chunks:4" to split ~11,800 genes across
+        4 parallel pods. When you use chunks:N scatter, you MUST explicitly plan
+        merge_chunks as a separate task that depends on ALL scattered regression tasks.
+        merge_chunks finds *_chunk*.rds files, groups by base name, and rbinds them.
+        Downstream tasks (classify_response_patterns etc.) depend on merge_chunks, NOT
+        on the individual regression tasks.
+
+        Example plan with 3 regressions + merge + downstream:
+          taskToolNames:      ["prepare_expression_data", "regress_dose", "regress_cn", "regress_mt", "merge_chunks", "classify_response_patterns"]
+          taskScatter:        ["", "chunks:4", "chunks:4", "chunks:4", "", ""]
+          taskDependsOn:      ["", "0", "0", "0", "1,2,3", "4"]
+          taskInputFiles:     ["/pfs/path/to/data.csv", "", "", "", "", ""]
+          taskToolParameters: ["", "", "", "", "", ""]
+          description:        "Run regressions with 4-way gene scatter, merge, classify"
+
+        In this example:
+        - Tasks 1-3 scatter into 4 chunks each (12 parallel pods total)
+        - Task 4 (merge_chunks) depends on tasks 1,2,3 — system rewrites to all 12 chunks
+        - Task 5 depends on task 4 (merged outputs)
+
+        SCOPE RULE: Only plan the tools the user asked for. Do NOT add extra tools.
 
 tools:
   prepare_expression_data:
